@@ -12,6 +12,7 @@
 - 支持Docker部署
 - 健康检查接口
 - 环境变量配置
+- 可选的TLS证书验证跳过（解决自签名证书问题）
 
 ## 配置说明
 
@@ -26,6 +27,7 @@
 | SMTP_USER | SMTP用户名 | - |
 | SMTP_PASS | SMTP密码 | - |
 | EMAIL_FROM | 默认发件人邮箱 | - |
+| SKIP_TLS_VERIFY | 是否跳过TLS证书验证 | true |
 
 可以通过`.env`文件或直接设置环境变量来配置。
 
@@ -62,8 +64,23 @@ docker run -p 8080:8080 \
   -e SMTP_USER=user@example.com \
   -e SMTP_PASS=password \
   -e EMAIL_FROM=no-reply@example.com \
+  -e SKIP_TLS_VERIFY=true \
   email-service:latest
 ```
+
+## 常见问题
+
+### TLS证书验证错误
+
+如果遇到以下错误：
+```
+邮件发送失败: tls: failed to verify certificate: x509: certificate signed by unknown authority
+```
+
+这通常是因为SMTP服务器使用的是自签名证书或者内部CA签发的证书。解决方法：
+
+1. 将`SKIP_TLS_VERIFY`环境变量设置为`true`
+2. 这将跳过TLS证书验证，但请注意这会降低连接的安全性
 
 ## API接口
 

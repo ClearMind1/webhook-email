@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -15,13 +16,14 @@ import (
 
 // Config 存储应用配置
 type Config struct {
-	Port         string
-	WebhookToken string
-	SMTPHost     string
-	SMTPPort     int
-	SMTPUser     string
-	SMTPPass     string
-	EmailFrom    string
+	Port          string
+	WebhookToken  string
+	SMTPHost      string
+	SMTPPort      int
+	SMTPUser      string
+	SMTPPass      string
+	EmailFrom     string
+	SkipTLSVerify bool
 }
 
 // EmailPayload 定义邮件请求负载结构
@@ -57,6 +59,7 @@ func loadConfig() error {
 	config.SMTPUser = getEnv("SMTP_USER", "")
 	config.SMTPPass = getEnv("SMTP_PASS", "")
 	config.EmailFrom = getEnv("EMAIL_FROM", "")
+	config.SkipTLSVerify = getEnvAsBool("SKIP_TLS_VERIFY", true)
 
 	// 验证必要的配置
 	if config.WebhookToken == "" {
@@ -93,6 +96,21 @@ func getEnvAsInt(key string, defaultValue int) int {
 		log.Printf("警告: 无法解析环境变量 %s 的值 '%s' 为整数, 使用默认值 %d", key, valueStr, defaultValue)
 		return defaultValue
 	}
+	return value
+}
+
+// 获取环境变量并转换为布尔值
+func getEnvAsBool(key string, defaultValue bool) bool {
+	valueStr := os.Getenv(key)
+	if valueStr == "" {
+		return defaultValue
+	}
+
+	value := false
+	if valueStr == "1" || valueStr == "true" || valueStr == "TRUE" || valueStr == "True" || valueStr == "yes" || valueStr == "YES" || valueStr == "Yes" {
+		value = true
+	}
+
 	return value
 }
 
@@ -154,6 +172,13 @@ func sendEmail(payload EmailPayload) error {
 
 	// 配置SMTP发送器
 	d := gomail.NewDialer(config.SMTPHost, config.SMTPPort, config.SMTPUser, config.SMTPPass)
+
+	// 设置TLS配置，根据配置决定是否跳过证书验证
+	if config.SkipTLSVerify {
+		d.TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
 
 	// 发送邮件
 	return d.DialAndSend(m)
