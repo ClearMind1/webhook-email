@@ -5,6 +5,9 @@ WORKDIR /app
 # 复制go mod和sum文件
 COPY go.mod go.sum* ./
 
+# 设置Go代理
+ENV GOPROXY=https://goproxy.cn,direct
+
 # 下载依赖
 RUN go mod download
 
